@@ -18,8 +18,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def handle_video(update: Update, context: ContextTypes.DEFAULT_TYPE):
     message = update.message
 
-    # Check if video is directly sent or attached as document
-    file = message.video or (message.document if message.document and message.document.mime_type.startswith("video/") else None)
+    file = message.video or (
+        message.document if message.document and message.document.mime_type.startswith("video/") else None
+    )
 
     if not file:
         await message.reply_text("❌ Unsupported file. Please send a proper video file.")
@@ -27,16 +28,21 @@ async def handle_video(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     try:
         tg_file = await context.bot.get_file(file.file_id)
-        stream_url = tg_file.file_path
-        final_url = f"https://api.telegram.org/file/bot{BOT_TOKEN}/{stream_url}"
+
+        if not tg_file.file_path:
+            await message.reply_text("❌ Couldn’t retrieve stream link. Telegram didn't return a file path.")
+            return
+
+        final_url = f"https://api.telegram.org/file/bot{BOT_TOKEN}/{tg_file.file_path}"
 
         await message.reply_text(
             f"✅ VLC Stream Link:\n`{final_url}`\n\n🎬 Open VLC → Media → Open Network Stream",
             parse_mode='Markdown'
         )
+
     except Exception as e:
-        logging.error(f"Error: {e}")
-        await message.reply_text("⚠️ Failed to generate stream link. Try again.")
+        await message.reply_text(f"⚠️ Internal error: `{e}`", parse_mode="Markdown")
+
 
 def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
