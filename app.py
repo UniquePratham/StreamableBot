@@ -1,26 +1,42 @@
 import os
+import logging
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
 
 BOT_TOKEN = os.environ["BOT_TOKEN"]
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("📽️ Send a video and I’ll give you a VLC streaming link.")
+# Set up logging
+logging.basicConfig(
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s", level=logging.INFO
+)
 
+# Start command
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("📽️ Send a video file (not a link or GIF), and I’ll give you a VLC streamable link.")
+
+# Video/file handler
 async def handle_video(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    file = update.message.video or update.message.document
+    message = update.message
+
+    # Check if video is directly sent or attached as document
+    file = message.video or (message.document if message.document and message.document.mime_type.startswith("video/") else None)
+
     if not file:
-        await update.message.reply_text("❌ Only video files supported.")
+        await message.reply_text("❌ Unsupported file. Please send a proper video file.")
         return
 
-    tg_file = await context.bot.get_file(file.file_id)
-    stream_url = tg_file.file_path
-    final_url = f"https://api.telegram.org/file/bot{BOT_TOKEN}/{stream_url}"
+    try:
+        tg_file = await context.bot.get_file(file.file_id)
+        stream_url = tg_file.file_path
+        final_url = f"https://api.telegram.org/file/bot{BOT_TOKEN}/{stream_url}"
 
-    await update.message.reply_text(
-        f"✅ VLC Stream Link:\n`{final_url}`\n\n🎬 Open VLC → Media → Open Network Stream",
-        parse_mode='Markdown'
-    )
+        await message.reply_text(
+            f"✅ VLC Stream Link:\n`{final_url}`\n\n🎬 Open VLC → Media → Open Network Stream",
+            parse_mode='Markdown'
+        )
+    except Exception as e:
+        logging.error(f"Error: {e}")
+        await message.reply_text("⚠️ Failed to generate stream link. Try again.")
 
 def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
