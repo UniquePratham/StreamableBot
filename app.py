@@ -28,9 +28,7 @@ def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.VIDEO | filters.Document.VIDEO, handle_video))
-
-    port = int(os.environ.get("PORT", 10000))
-    app.run_polling(allowed_updates=Update.ALL_TYPES, listen="0.0.0.0", port=port)
+    app.run_polling(allowed_updates=Update.ALL_TYPES)
 
 if __name__ == "__main__":
     main()
