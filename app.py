@@ -1,26 +1,24 @@
 import os
-from telegram import Update, File
-from telegram.ext import ApplicationBuilder, MessageHandler, filters, ContextTypes, CommandHandler
+from telegram import Update
+from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
 
-BOT_TOKEN = os.environ.get("BOT_TOKEN")
+BOT_TOKEN = os.environ["BOT_TOKEN"]
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("🎥 Send me a video file and I’ll give you a VLC streaming link.")
+    await update.message.reply_text("📽️ Send a video and I’ll give you a VLC streaming link.")
 
 async def handle_video(update: Update, context: ContextTypes.DEFAULT_TYPE):
     file = update.message.video or update.message.document
     if not file:
-        await update.message.reply_text("❌ Only video files are supported.")
+        await update.message.reply_text("❌ Only video files supported.")
         return
 
-    tg_file: File = await context.bot.get_file(file.file_id)
-    file_path = tg_file.file_path.split('/')[-1]
-    stream_link = f"https://cdn4.telegram-cdn.org/file/{file_path}"
+    tg_file = await context.bot.get_file(file.file_id)
+    stream_url = tg_file.file_path
+    final_url = f"https://api.telegram.org/file/bot{BOT_TOKEN}/{stream_url}"
 
     await update.message.reply_text(
-        f"✅ Your VLC stream link:\n\n🔗 `{stream_link}`\n\n"
-        f"▶ Open VLC > Media > Open Network Stream\nPaste the link there.\n\n"
-        f"⚠ Link stays valid as long as Telegram caches it.",
+        f"✅ VLC Stream Link:\n`{final_url}`\n\n🎬 Open VLC → Media → Open Network Stream",
         parse_mode='Markdown'
     )
 
